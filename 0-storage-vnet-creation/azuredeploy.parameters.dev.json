@@ -1,0 +1,55 @@
+{
+  // both the schema definitions work; recommended to use the one in line 4, as it gives clear info on type of file
+  /* "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#", */
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "mystoragePrefix": {
+      "value": "dev12"
+     },
+    "storageSKU": {
+      "value": "Standard_LRS"
+     },
+    "location": {
+      "value": "southindia"
+      /* "value": "southeastasia" */
+     },
+    "vnet_name": {
+       "value": "dev12"
+     },
+    /* "subnet_name": {
+       "value": "subnet-dev"
+     }, */
+     "allAddrSpaces":{
+       "value":{
+       /* "name":"VNet1", */
+       "addressPrefixes": [
+         {
+           "name": "firstPrefix",
+           "addressPrefix": "10.7.0.0/16"
+         },
+         {
+           "name": "secondPrefix",
+           "addressPrefix": "10.8.0.0/16"
+         }
+         ],
+         "subnets": [
+         {
+           "name": "subnet-dev-A",
+           "addressPrefix": "10.7.0.0/24"
+         },
+         {
+           "name":"subnet-dev-B",
+           "addressPrefix":"10.8.0.0/24"
+         }
+         ]
+       }
+     },
+     "resourceTags": {
+         "value": {
+           "environment": "dev",
+           "lab-simulation": "arm-template-creation-dev"
+       }
+     }
+   }
+  }

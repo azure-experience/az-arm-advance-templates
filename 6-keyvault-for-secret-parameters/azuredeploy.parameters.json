@@ -1,0 +1,25 @@
+{
+  // both the schema definitions work; recommended to use the one in line 4, as it gives clear info on type of file
+  /* "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#", */
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    /* "computerName": {
+        "type": "string",
+        "value": "windowsvm"
+    }, */
+    "adminAccount": {
+        "type": "string",
+        "value": "azureadmin"
+    },
+    "adminPassword": {
+        "type": "securestring",
+        "reference": {
+        "keyVault": {
+            "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.KeyVault/vaults/azkvbxmueijtaz47c"
+        },
+        "secretName": "vmAdminPassword"
+      }
+    }
+  }
+}

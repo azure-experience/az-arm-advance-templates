@@ -1,0 +1,403 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "uniqueName": {
+      "type": "string",
+      "defaultValue": "aznew",
+      "metadata": {"desciption": "please choose a unique reference name"}
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "azstorage123",
+      "minLength": 3,
+      "maxLength": 24
+    },
+    "conditionParamsforStorage": {
+      "type": "string",
+      "allowedValues": [
+          "new",
+          "existing"
+      ]
+    },
+    "storagereplicationstrategy": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "location": {
+      "type": "string",
+      /* "defaultValue": "[resourceGroup().location]", */
+      "defaultValue": "southindia",
+      "allowedValues": [
+        "southindia",
+        "centralindia",
+        "westindia"
+      ],
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "dnslabelprefix": {
+      "type": "string",
+      "defaultValue": "mynewapp",
+      "metadata": {
+        "description": "Please supplement the DNS label for your app (used by Public IP Addr)"
+      }
+    },
+    "allAddrSpaces":{
+        "type": "object",
+        "defaultValue": {
+            /* "name":"VNet1", (not mandatory to mention the profile name) */
+              "addressPrefixes": [
+                  {
+                      "name": "firstvnetPrefix",
+                      "addressPrefix": "10.0.0.0/16"
+                  },
+                  {
+                      "name": "secondvnetPrefix",
+                      "addressPrefix": "10.1.0.0/16"
+                  }
+              ],
+              "subnets":[
+                  {
+                      "name": "firstSubnet",
+                      "addressPrefix": "10.0.0.0/24"
+                  },
+                  {
+                      "name":"secondSubnet",
+                      "addressPrefix":"10.1.0.0/24"
+                  }
+              ]
+          }
+      },
+    "sizeofVM": {
+        "type": "string",
+        "defaultValue": "Standard_DS1_v2",
+        "allowedValues": [
+          "Standard_B1s",
+          "Standard_B1ms",
+          "Standard_B2s",
+          "Standard_DS1_v2"
+        ]
+    },
+    "windowsImageSKU":{
+        "type": "string",
+        "defaultValue": "2019-Datacenter",
+        "allowedValues": [
+          "2008-R2-SP1",
+          "2012-Datacenter",
+          "2012-R2-Datacenter",
+          "2016-Nano-Server",
+          "2016-Datacenter-with-Containers",
+          "2016-Datacenter",
+          "2019-Datacenter" ]
+    },
+    "computerName": {
+        "type": "string",
+        "defaultValue": "mywinvm",
+        "minLength": 3,
+        "maxLength": 12
+    },
+    "adminAccount": {
+        "type": "string",
+        "defaultValue": "azureadmin",
+        "minLength": 3,
+        "maxLength": 12
+    },
+    "adminPassword": {
+        "type": "string",
+        "defaultValue": "Azurevm@123",
+        "minLength": 3,
+        "maxLength": 12
+    },
+    "resourceTags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "simulation",
+        "lab-simulation": "arm-template-condition-based-resource-creation"
+      }
+    }
+  },
+  "variables": {
+    // drop the storage account name variable, as we rely on condition-based resource creation
+    /* "storageAccountName": "[concat(parameters('storageName'), 'stg', uniquestring(resourceGroup().id))]", */
+    "publicIPAddressName": "[concat(parameters('uniqueName'), 'ip', uniquestring(resourceGroup().id))]",
+    "vnetName": "[concat(parameters('uniqueName'), 'vnet', uniquestring(resourceGroup().id))]",
+    "nsgName": "[concat(parameters('uniqueName'), 'nsg', uniquestring(resourceGroup().id))]",
+    "nicName": "[concat(parameters('uniqueName'), 'nic', uniquestring(resourceGroup().id))]",
+    "vmName": "[concat(parameters('uniqueName'), 'vm', uniquestring(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+    "type": "Microsoft.Network/publicIPAddresses",
+    "apiVersion": "2019-11-01",
+    "name": "[variables('publicIPAddressName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "sku": {
+      "name": "Basic"
+    },
+    "properties": {
+      "publicIPAllocationMethod": "Static",
+      "publicIPAddressVersion": "IPv4",
+      "dnsSettings": {
+        "domainNameLabel": "[parameters('dnslabelprefix')]"
+        },
+      "idleTimeoutInMinutes": "10"
+    }
+  },
+  {
+    "condition": "[equals(parameters('conditionParamsforStorage'),'new')]",
+    "type": "Microsoft.Storage/storageAccounts",
+    "apiVersion": "2019-04-01",
+    "name": "[parameters('storageAccountName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "sku": {
+      "name": "[parameters('storagereplicationstrategy')]"
+    },
+    "kind": "StorageV2",
+    "properties": {
+      "encryption": {
+        "keySource":"Microsoft.Storage",
+        // (not needed, as only storage option is chosen as keysource)
+        /* "keyvaultproperties": {
+          "keyname": "",
+          "keyvaulturi": "",
+          "keyversion": ""
+        }, */
+        "services": {
+            "blob": {
+              "enabled": "true"
+            },
+            "file": {
+              "enabled": "true"
+            }
+        }
+      },
+      "supportsHttpsTrafficOnly": true
+    }
+  },
+  {
+    "type": "Microsoft.Network/virtualNetworks",
+    "apiVersion": "2019-11-01",
+    "name": "[variables('vnetName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]"
+    ],
+    "properties": {
+        "addressSpace": {
+          /* "addressPrefixes": "[parameters('vnetAddrSpace')]" */
+          /* /* "type": "string", (not a string, but an object)*/
+          "addressPrefixes": ["[parameters('allAddrSpaces').addressPrefixes[0].addressPrefix]", "[parameters('allAddrSpaces').addressPrefixes[1].addressPrefix]"]
+          },
+        "subnets": [
+            {
+            "name": "[parameters('allAddrSpaces').subnets[0].name]",
+            "properties": {
+                "addressPrefix": "[parameters('allAddrSpaces').subnets[0].addressPrefix]",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]"
+                }
+              }
+            },
+            {
+            "name": "[parameters('allAddrSpaces').subnets[1].name]",
+            "properties": {
+                "addressPrefix": "[parameters('allAddrSpaces').subnets[1].addressPrefix]",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              }
+            }
+          ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": false,
+        "enableVmProtection": false
+        }
+      },
+  {
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "apiVersion": "2019-11-01",
+    "name": "[variables('nsgName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "properties": {
+      "securityRules": [
+        {
+          "name": "inbound-rdp-rules",
+          "properties": {
+            "description": "default nsg template for nic",
+            "protocol": "tcp",
+            "access": "Allow",
+            "priority": "100",
+            "direction": "Inbound",
+            "sourcePortRange": "*",
+            "destinationPortRange": "3389",
+            "sourceAddressPrefix": "*",
+            "destinationAddressPrefix": "VirtualNetwork"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "Microsoft.Network/networkInterfaces",
+    "apiVersion": "2018-11-01",
+    "name": "[variables('nicName')]",
+    "location": "[parameters('location')]",
+    "dependsOn": [
+      "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+      "[resourceId('Microsoft.Network/virtualNetworks/', variables('vNetName'))]"
+    ],
+    "properties": {
+      "ipConfigurations": [
+        {
+          "name": "ipconfig1",
+          "properties": {
+            "privateIPAllocationMethod": "Dynamic",
+            "publicIPAddress": {
+              "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+            },
+            "subnet": {
+              /* "id": "[variables('subnetRef')]" */
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('vnetName'),parameters('allAddrSpaces').subnets[0].name)]"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "Microsoft.Compute/virtualMachines",
+    "apiVersion": "2019-07-01",
+    "name": "[variables('vmName')]",
+    "location": "[parameters('location')]",
+    "tags": "[parameters('resourceTags')]",
+    "dependsOn":[
+      "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
+      "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+    ],
+    "properties": {
+      "hardwareProfile": {
+        "vmSize": "[parameters('sizeofVM')]"
+      },
+      "storageProfile": {
+        "imageReference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "[parameters('windowsImageSKU')]",
+          "version": "latest"
+        },
+        /* "dataDisks":[
+          {
+            "name": "newexternalhd",
+            "lun": "0",
+            "createOption": "Empty"
+          }
+        ], */
+        "osDisk":{
+          "createOption":"FromImage"
+        }
+      },
+      "osProfile": {
+        "computerName": "[parameters('computerName')]",
+        "adminUsername": "[parameters('adminAccount')]",
+        "adminPassword": "[parameters('adminPassword')]"
+      },
+      "networkProfile": {
+        "networkInterfaces":[
+          {
+            "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+          }
+        ]
+      },      
+      "diagnosticsProfile": {
+        "bootDiagnostics": {
+          "enabled": "true",
+          "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))).primaryEndpoints.blob]"
+          /* "storageUri": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net')]" */
+        }
+      }
+    }
+  },
+  {
+    "type": "Microsoft.Compute/virtualMachines/extensions",
+    "apiVersion": "2018-06-01",
+    "name": "[concat(variables('vmName'),'/', 'InstallWebServer')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "dependsOn": [
+        /* "[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]" */
+        "[resourceId('Microsoft.Compute/virtualMachines',variables('vmName'))]"
+    ],
+    "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.7",
+        "autoUpgradeMinorVersion":true,
+        "settings": {
+            "fileUris": [
+                "https://raw.githubusercontent.com/Azure/azure-docs-json-samples/master/tutorial-vm-extension/installWebServer.ps1"
+            ],
+            "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installWebServer.ps1"
+        }
+      }
+  }
+],
+  // for multiple copy of resources, please dont declare the output section
+  "outputs": {
+    // cant use output reference if conditional parameters are deployed
+    /* "storageEndpoint": {
+      "type": "object",
+      "value": "[reference(parameters('storageAccountName')).primaryEndpoints]"
+    },
+    "storageencryption": {
+      "type": "object",
+      "value": "[reference(parameters('storageAccountName')).encryption]"
+    }, */
+    "publicIPAddress": {
+      "type": "string",
+      "value": "[reference(variables('publicIPAddressName')).ipAddress]"
+    },
+    "publicdnsSettings": {
+      "type": "object",
+      "value": "[reference(variables('publicIPAddressName')).dnsSettings]"
+    },
+    "vnetAddrSpace": {
+      "type": "object",
+      //"value": "[reference(variables('vnetName'))]" ==> gives the info on vnet account; drill down to get other info on addressPrefix & subnet
+      "value": "[reference(variables('vnetName')).addressSpace]"
+    },
+    "vnetSubnet": {
+      "type": "array",
+      "value": "[reference(variables('vnetName')).subnets]"
+      },
+    "nsgInfo": {
+      "type": "array",
+      "value": "[reference(variables('nsgName')).securityRules]"
+      },
+    "nicInfo": {
+      "type": "array",
+      "value": "[reference(variables('nicName')).ipConfigurations]"
+      },
+    "vmInfo": {
+      "type": "object",
+      "value": "[reference(variables('vmName'))]"
+      }
+    }
+}

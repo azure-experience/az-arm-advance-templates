@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "uniqueName": {
+      "type": "string",
+      "defaultValue": "az",
+      "metadata": {
+        "desciption": "please choose a unique reference name for keyvault"
+        }
+    },
+    "location": {
+      "type": "string",
+      /* "defaultValue": "[resourceGroup().location]", */
+      "defaultValue": "southindia",
+      "allowedValues": [
+        "southindia",
+        "centralindia",
+        "westindia"
+      ],
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "adUserId": {
+      "type": "string",
+      "defaultValue": "0164c813-8650-4e2f-b4bb-3d2d6de7bf2e"
+    },
+    "secretName": {
+      "type": "string",
+      "defaultValue": "vmAdminPassword"
+    },
+    "secretValue": {
+      "type": "securestring"
+    },
+    "resourceTags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "simulation",
+        "lab-simulation": "arm-template-keyvault-exercise"
+      }
+    }
+
+  },
+  "variables": {
+    // drop the storage account name variable, as we rely on condition-based resource creation
+    "keyVaultName": "[concat(parameters('uniqueName'), 'kv', uniquestring(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+    "type": "Microsoft.KeyVault/vaults",
+    "apiVersion": "2018-02-14",
+    "name": "[variables('keyVaultName')]",
+    "location": "[parameters('location')]",
+    "tags": "[parameters('resourceTags')]",
+    "properties": {
+      "tenantId": "[subscription().tenantId]",
+      "sku": {
+        "family": "A",
+        "name": "standard"
+      },
+      "enabledForDeployment": "true",
+      "enabledForDiskEncryption": "true",
+      "enabledForTemplateDeployment": "true",
+      "accessPolicies": [
+        {
+          "tenantId": "[subscription().tenantId]",
+          "objectId": "[parameters('adUserId')]",
+          "permissions": {
+            "keys": [
+              "create",
+              "update",
+              "delete",
+              "recover"
+            ],
+            "secrets": [
+              "get",
+              "list",
+              "delete",
+              "recover"
+            ],
+            "certificates": [
+              "get",
+              "list",
+              "delete",
+              "recover"
+            ],
+            "storage": [
+              "get",
+              "list",
+              "delete",
+              "recover"
+            ]
+          }
+        }
+      ],
+      "networkAcls": {
+        "bypass": "AzureServices",
+        "defaultAction": "Allow"
+       }
+      }
+    },
+    {
+    "type": "Microsoft.KeyVault/vaults/secrets",
+    "apiVersion": "2018-02-14",
+    // as the child: secret is outside of parent (kv) resource scope, it needs to be of format: parent/child
+    "name": "[concat(variables('keyVaultName'), '/', parameters('secretName'))]",
+    "tags": "[parameters('resourceTags')]",
+    "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+    ],
+    "properties": {
+      "value": "[parameters('secretValue')]",
+      "contentType": "string"
+    }
+  }
+],
+  // for multiple copy of resources, please dont declare the output section
+  "outputs": {
+    "vaultUri": {
+      "type": "string",
+      "value": "[reference(variables('keyvaultname')).vaultUri]"
+      }
+    }
+}

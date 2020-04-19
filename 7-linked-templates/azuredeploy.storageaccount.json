@@ -1,0 +1,110 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "azstorage123",
+      "minLength": 3,
+      "maxLength": 24
+    },
+    /* "conditionParamsforStorage": {
+      "type": "string",
+      "allowedValues": [
+          "new",
+          "existing"
+      ]
+    }, */
+    "storagereplicationstrategy": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "location": {
+      "type": "string",
+      /* "defaultValue": "[resourceGroup().location]", */
+      "defaultValue": "southindia",
+      "allowedValues": [
+        "southindia",
+        "centralindia",
+        "westindia"
+      ],
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "resourceTags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "simulation",
+        "lab-simulation": "arm-template-linked-template"
+      }
+    }
+  },
+  "variables": {
+    // drop the storage account name variable, as we rely on condition-based resource creation
+    /* "storageAccountName": "[concat(parameters('storageName'), 'stg', uniquestring(resourceGroup().id))]", */
+  },
+  "resources": [
+  {
+    /* "condition": "[equals(parameters('conditionParamsforStorage'),'new')]", */
+    "type": "Microsoft.Storage/storageAccounts",
+    "apiVersion": "2019-04-01",
+    "name": "[parameters('storageAccountName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "sku": {
+      "name": "[parameters('storagereplicationstrategy')]"
+    },
+    "kind": "StorageV2",
+    "properties": {
+      "encryption": {
+        "keySource":"Microsoft.Storage",
+        // (not needed, as only storage option is chosen as keysource)
+        /* "keyvaultproperties": {
+          "keyname": "",
+          "keyvaulturi": "",
+          "keyversion": ""
+        }, */
+        "services": {
+            "blob": {
+              "enabled": "true"
+            },
+            "file": {
+              "enabled": "true"
+            }
+        }
+      },
+      "supportsHttpsTrafficOnly": true
+    }
+  }
+  ],
+  // for multiple copy of resources, please dont declare the output section
+  "outputs": {
+    // cant use output reference if conditional parameters are deployed
+    /* "storageEndpoint": {
+      "type": "object",
+      "value": "[reference(parameters('storageAccountName')).primaryEndpoints]"
+    }, */
+    "storageEndpointBlob": {
+      "type": "string",
+      "value": "[reference(parameters('storageAccountName')).primaryEndpoints.blob]"
+    },
+    /* "storageencryption": {
+      "type": "object",
+      "value": "[reference(parameters('storageAccountName')).encryption]"
+    }, */
+    "storageencryptionBlob": {
+      "type": "object",
+      "value": "[reference(parameters('storageAccountName')).encryption.services.blob]"
+    }
+    }
+}
