@@ -317,7 +317,7 @@ DeploymentDebugLogLevel :
 ### <a name="concurrent-resource-creation"></a>4. Concurrent resource deployment
 |Property|Definition|
 |---|---|
-|Folder|[1-quick-template-reference](./1-quick-template-reference)|
+|Folder|[2-multiple-concurrent-copies](./2-multiple-concurrent-copies)|
 |File|_azuredeploy.json_|
 
 Sometimes there are scenarios, where you might need to **deploy multiple, identical copy of az resources**, which can be accomplished by usage of _copyIndex_ function. Below we are trying to **create 3 storage accounts of identical configuration** in the same region 
