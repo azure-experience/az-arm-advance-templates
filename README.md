@@ -55,8 +55,9 @@ PS C:\WINDOWS\system32> help New-AzResourceGroupDeployment -ShowWindow
 ### <a name="multi-resource-creation"></a>2. Multi-resource creation
 |Property|Definition|
 |---|---|
-|Folder|[2-resource-creation](./2-resource-creation)|
+|Folder|[0-storage-vnet-creation](./0-storage-vnet-creation)|
 |File|_azuredeploy.json_|
+|ParameterFile|_azuredeploy.parameters.dev.json_|
 
 Run this command to create a **storageaccount** & **virtualnetwork** simultaneously in your resource group. Here you need to understand the usage of **positional elements within array**, and the mechanism to invoke it.
 
@@ -122,7 +123,6 @@ Observe how these elements are referred during the creation of Vnet resources (e
               },
 ...
 ```
-
 
 **Command:**
 ```
