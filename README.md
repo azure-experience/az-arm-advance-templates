@@ -52,7 +52,7 @@ Before we create a new resource (within our resource group) using: _New-AzResour
 PS C:\WINDOWS\system32> help New-AzResourceGroupDeployment -ShowWindow
 ```
 
-### <a name="new-resource-creation"></a>2. Multi-resource creation
+### <a name="multi-resource-creation"></a>2. Multi-resource creation
 |Property|Definition|
 |---|---|
 |Folder|[2-resource-creation](./2-resource-creation)|
