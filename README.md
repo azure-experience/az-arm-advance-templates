@@ -4,7 +4,7 @@ A detailed run on few of the advance topics of ARM
 ## Index for different use-cases
 ### [1. Brief Introduction _(Before you start)_](#before-we-start)
 ### [2. Multi-resource creation](#multi-resource-creation)
-### [3. Resource creation with parameters](#resource-creation-parameters)
+### [3. Deploy a pre-defined template](#pre-defined-template)
 ### [4. Resource creation with functions](#resource-creation-functions)
 ### [5. Resource creation with variables](#resource-creation-variables)
 ### [6. How to get output for your ARM templates?](#arm-generate-output)
@@ -238,3 +238,13 @@ Outputs                 :
 
 DeploymentDebugLogLevel :
 ```
+
+### <a name="pre-defined-template"></a>3. Deploy a pre-defined template
+|Property|Definition|
+|---|---|
+|Folder|[1-quick-template-reference](./1-quick-template-reference)|
+|File|_azuredeploy.json_|
+
+We can always rely on the ["pre-defined" templates](https://github.com/Azure/azure-quickstart-templates) already provided for Azure resources (within github). It could save you a lot of configuration time and speed up new resource creation for any az service
+
+![](imgs/a-github-quick-start-az-templates.png)
