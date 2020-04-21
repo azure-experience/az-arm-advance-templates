@@ -248,3 +248,68 @@ DeploymentDebugLogLevel :
 We can always rely on the ["pre-defined" templates](https://github.com/Azure/azure-quickstart-templates) already provided for Azure resources (within github). It could save you a lot of configuration time and speed up new resource creation for any az service
 
 ![](imgs/a-github-quick-start-az-templates.png)
+
+**Command:**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\1-quick-template-reference> 
+New-AzResourceGroupDeployment -Name "quicktemplateusage" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 19:40:46 - Template is valid.
+VERBOSE: 19:40:49 - Create template deployment 'quicktemplateusage'
+VERBOSE: 19:40:54 - Resource Microsoft.Storage/storageAccounts 'azstoragebxmueijtaz47c' provisioning status is running
+VERBOSE: 19:41:18 - Resource Microsoft.Storage/storageAccounts 'azstoragebxmueijtaz47c' provisioning status is succeeded
+
+
+DeploymentName          : quicktemplateusage
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 14:11:18
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name                    Type                       Value
+                          ======================  =========================  ==========
+                          storageReferenceName    String                     azstorage
+                          storageAccountType      String                     Standard_LRS
+                          location                String                     southindia
+
+Outputs                 :
+                          Name                       Type                       Value
+                          =========================  =========================  ==========
+                          stgaccounstgnetworkacls    Object                     {
+                            "bypass": "AzureServices",
+                            "virtualNetworkRules": [],
+                            "ipRules": [],
+                            "defaultAction": "Allow"
+                          }
+                          stgencryption              Object                     {
+                            "services": {
+                              "file": {
+                                "enabled": true,
+                                "lastEnabledTime": "2020-04-19T14:10:54.7900009Z"
+                              },
+                              "blob": {
+                                "enabled": true,
+                                "lastEnabledTime": "2020-04-19T14:10:54.7900009Z"
+                              }
+                            },
+                            "keySource": "Microsoft.Storage"
+                          }
+                          stgccesstier               String                     Hot
+                          stglocation                String                     southindia
+                          stgendpoints               Object                     {
+                            "dfs": "https://azstoragebxmueijtaz47c.dfs.core.windows.net/",
+                            "web": "https://azstoragebxmueijtaz47c.z30.web.core.windows.net/",
+                            "blob": "https://azstoragebxmueijtaz47c.blob.core.windows.net/",
+                            "queue": "https://azstoragebxmueijtaz47c.queue.core.windows.net/",
+                            "table": "https://azstoragebxmueijtaz47c.table.core.windows.net/",
+                            "file": "https://azstoragebxmueijtaz47c.file.core.windows.net/"
+                          }
+
+DeploymentDebugLogLevel :
+```
