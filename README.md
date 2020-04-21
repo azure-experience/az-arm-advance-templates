@@ -345,6 +345,7 @@ Sometimes there are scenarios, where you might need to **deploy multiple, identi
 ```
 
 :memo: **Key pointer:**
+
 When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation
 
 **Command:**
