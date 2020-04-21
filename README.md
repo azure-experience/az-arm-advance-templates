@@ -5,7 +5,7 @@ A detailed run on few of the advance topics of ARM
 ### [1. Brief Introduction _(Before you start)_](#before-we-start)
 ### [2. Multi-resource creation](#multi-resource-creation)
 ### [3. Deploy a pre-defined template](#pre-defined-template)
-### [4. Resource creation with functions](#resource-creation-functions)
+### [4. Concurrent resource deployment](#concurrent-resource-creation)
 ### [5. Resource creation with variables](#resource-creation-variables)
 ### [6. How to get output for your ARM templates?](#arm-generate-output)
 ### [7. Usage of exported templates](#exported-templates)
@@ -311,5 +311,75 @@ Outputs                 :
                             "file": "https://azstoragebxmueijtaz47c.file.core.windows.net/"
                           }
 
+DeploymentDebugLogLevel :
+```
+
+### <a name="concurrent-resource-creation"></a>4. Concurrent resource deployment
+|Property|Definition|
+|---|---|
+|Folder|[1-quick-template-reference](./1-quick-template-reference)|
+|File|_azuredeploy.json_|
+
+Sometimes there are scenarios, where you might need to **deploy multiple, identical copy of az resources**, which can be accomplished by usage of _copyIndex_ function. Below we are trying to **create 3 storage accounts of identical configuration** in the same region 
+
+```
+/* resource definition */
+...
+"resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-04-01",
+      // dont need to reference any variable as its already commented out
+      // "name": "[variables('storageAccountName')]",
+      "name": "[concat(copyIndex(),'azstorage', uniqueString(resourceGroup().id))]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('storageAccountType')]"
+      },
+      "kind": "StorageV2",
+      "copy": {
+          "name": "azstoragecopy",
+          "count": 3
+        },
+...
+```
+
+:memo: **Key pointer:**
+When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation
+
+**Command:**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\2-multiple-concurrent-copies> 
+New-AzResourceGroupDeployment -Name "multipleresourcecreation" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 19:49:08 - Template is valid.
+VERBOSE: 19:49:10 - Create template deployment 'multipleresourcecreation'
+VERBOSE: 19:49:16 - Resource Microsoft.Storage/storageAccounts '0azstoragebxmueijtaz47c' provisioning status is running
+VERBOSE: 19:49:35 - Resource Microsoft.Storage/storageAccounts '1azstoragebxmueijtaz47c' provisioning status is running
+VERBOSE: 19:49:35 - Resource Microsoft.Storage/storageAccounts '2azstoragebxmueijtaz47c' provisioning status is running
+VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '1azstoragebxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '2azstoragebxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '0azstoragebxmueijtaz47c' provisioning status is succeeded
+
+
+DeploymentName          : multipleresourcecreation
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 14:19:41
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name                    Type                       Value
+                          ======================  =========================  ==========
+                          storageReferenceName    String                     azstorage
+                          storageAccountType      String                     Standard_LRS
+                          location                String                     southindia
+
+Outputs                 :
 DeploymentDebugLogLevel :
 ```
