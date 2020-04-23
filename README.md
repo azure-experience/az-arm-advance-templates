@@ -391,7 +391,13 @@ DeploymentDebugLogLevel :
 
 At times, there will be a need to create a complex azure resource which interfaces (either directly or indirectly) with other az resources. Its important to know the **"sequential-order-of-creation"** to help create first the independent resource & then the dependent resource for the right execution.
 
-For ex: look at creation of a simple VM (see diagram below). **VM Creation** depends on 2 main components: _Storage Account_ & _Network-Interface-Card_. NIC itself depends on _Public IP Address & "Virtual Network_ to be ready & online before it can be instantiated. And lastly VNet depends entirely on a uniform "incoming/outgoing traffic" ruleset, namely: _Network Security Groups"_ which can be safely attached to its Subnet during VM creation (its recommended to attach NSG to subnet to homogenize the traffic security of VM's).
+For ex: look at creation of a simple VM (see diagram below). 
+
+a. **VM Creation** depends on 2 main components: _Storage Account_ & _Network-Interface-Card_
+
+b. NIC itself depends on _Public IP Address & "Virtual Network_ to be ready & online before it can be instantiated
+
+c. And lastly VNet depends entirely on a uniform "incoming/outgoing traffic" ruleset, namely: _Network Security Groups"_ which can be safely attached to its Subnet during VM creation
 
 ![](imgs/b-vm-creation-workflow.png)
 
@@ -401,3 +407,4 @@ I. first **create independent components** (ex: _Storage account & Public IP Add
 
 II. then **create "semi-independent" components**  with first layer of dependency (ex: 
 
+(its recommended to attach NSG to subnet to homogenize the traffic security of VM's).
