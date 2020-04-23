@@ -382,7 +382,7 @@ Outputs                 :
 DeploymentDebugLogLevel :
 ```
 
-### <a name="resource=inter-dependency"></a>5. Resource Inter-dependency
+### <a name="resource-inter-dependency"></a>5. Resource Inter-dependency
 |Property|Definition|
 |---|---|
 |Folder|[3-resource-inter-dependency](./3-resource-inter-dependency)|
