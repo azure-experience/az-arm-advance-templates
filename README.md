@@ -6,7 +6,7 @@ A detailed run on few of the advance topics of ARM
 ### [2. Multi-resource creation](#multi-resource-creation)
 ### [3. Deploy a pre-defined template](#pre-defined-template)
 ### [4. Concurrent resource deployment](#concurrent-resource-creation)
-### [5. Resource creation with variables](#resource-creation-variables)
+### [5. Resource inter-dependency](#resource-inter-dependency)
 ### [6. How to get output for your ARM templates?](#arm-generate-output)
 ### [7. Usage of exported templates](#exported-templates)
 ### [8. Usage of quick start templates](#quick-start-templates)
@@ -141,7 +141,6 @@ VERBOSE: 19:36:06 - Resource Microsoft.Network/virtualNetworks 'dev12' provision
 VERBOSE: 19:36:22 - Resource Microsoft.Network/virtualNetworks 'dev12' provisioning status is succeeded
 VERBOSE: 19:36:27 - Resource Microsoft.Storage/storageAccounts 'dev12bxmueijtaz47c' provisioning status is succeeded
 
-
 DeploymentName          : storagevnetcreate
 ResourceGroupName       : azure-lab-rg-01
 ProvisioningState       : Succeeded
@@ -264,7 +263,6 @@ VERBOSE: 19:40:49 - Create template deployment 'quicktemplateusage'
 VERBOSE: 19:40:54 - Resource Microsoft.Storage/storageAccounts 'azstoragebxmueijtaz47c' provisioning status is running
 VERBOSE: 19:41:18 - Resource Microsoft.Storage/storageAccounts 'azstoragebxmueijtaz47c' provisioning status is succeeded
 
-
 DeploymentName          : quicktemplateusage
 ResourceGroupName       : azure-lab-rg-01
 ProvisioningState       : Succeeded
@@ -367,7 +365,6 @@ VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '1azstoragebxmuei
 VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '2azstoragebxmueijtaz47c' provisioning status is succeeded
 VERBOSE: 19:49:40 - Resource Microsoft.Storage/storageAccounts '0azstoragebxmueijtaz47c' provisioning status is succeeded
 
-
 DeploymentName          : multipleresourcecreation
 ResourceGroupName       : azure-lab-rg-01
 ProvisioningState       : Succeeded
@@ -384,3 +381,23 @@ Parameters              :
 Outputs                 :
 DeploymentDebugLogLevel :
 ```
+
+### <a name="resource=inter-dependency"></a>5. Resource Inter-dependency
+|Property|Definition|
+|---|---|
+|Folder|[3-resource-inter-dependency](./3-resource-inter-dependency)|
+|File|_azuredeploy.json_|
+|ParameterFile|_azuredeploy.parameters.dev.json_|
+
+At times, there will be a need to create a complex azure resource which interfaces (either directly or indirectly) with other az resources. Its important to know the **"sequential-order-of-creation"** to help create first the independent resource & then the dependent resource for the right execution.
+
+For ex: look at creation of a simple VM (see diagram below). **VM Creation** depends on 2 main components: _Storage Account_ & _Network-Interface-Card_. NIC itself depends on _Public IP Address & "Virtual Network_ to be ready & online before it can be instantiated. And lastly VNet depends entirely on a uniform "incoming/outgoing traffic" ruleset, namely: _Network Security Groups"_ which can be safely attached to its Subnet during VM creation (its recommended to attach NSG to subnet to homogenize the traffic security of VM's).
+
+![](imgs/b-vm-creation-workflow.png)
+
+So its always advisable for the order of creation to
+
+I. first **create independent components** (ex: _Storage account & Public IP Address_)
+
+II. then **create "semi-independent" components**  with first layer of dependency (ex: 
+
