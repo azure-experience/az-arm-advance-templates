@@ -320,6 +320,7 @@ DeploymentDebugLogLevel :
 
 Sometimes there are scenarios, where you might need to **deploy multiple, identical copy of az resources**, which can be accomplished by usage of _copyIndex_ function. Below we are trying to **create 3 storage accounts of identical configuration** in the same region 
 
+**Extract from the json file:**
 ```
 /* resource definition */
 ...
@@ -342,7 +343,7 @@ Sometimes there are scenarios, where you might need to **deploy multiple, identi
 ...
 ```
 
-:memo: **Key pointer:**
+:memo: **Key-note:**
 
 When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation
 
@@ -415,5 +416,309 @@ III. and lastly, after all the other components (ex: _Storage account, Public IP
 
 2. Secondly, its recommended to attach NSG to subnet to homogenize the traffic security of VM's
 
-3. And lastly, this VM creation process can be extended to add the next set of components such as **PS Desired Confiuguration/Custom Script extension**
+3. And lastly, this VM creation process can be further extended to add the next set of components such as **PS Desired Confiuguration/Custom Script extension**
+
+**Extract from the json file:**
+
+Please see the resource definition for the **NSG** defined here [it allows incoming RDP connections to that VM (port _3389_)]
+```
+/* resource definition *?
+...
+{
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "apiVersion": "2019-11-01",
+    "name": "[variables('nsgName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "properties": {
+      "securityRules": [
+        {
+          "name": "inbound-rdp-rules",
+          "properties": {
+            "description": "default nsg template for nic",
+            "protocol": "tcp",
+            "access": "Allow",
+            "priority": "100",
+            "direction": "Inbound",
+            "sourcePortRange": "*",
+            "destinationPortRange": "3389",
+            "sourceAddressPrefix": "*",
+            "destinationAddressPrefix": "VirtualNetwork"
+          }
+        }
+      ]
+    }
+  },
+  ...
+  ```
+  
+  Now check the resource definition for **VNet**, which directly depends on the NSG to be pre-created & ready. Vnet resource references the **resourceId for the NSG** (which is available after its creation). It relies on the usage of **dependsOn** method within a resource definition
+
+```
+/* parameter definition */
+...
+{
+    "type": "Microsoft.Network/virtualNetworks",
+    "apiVersion": "2019-11-01",
+    "name": "[variables('vnetName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]"
+    ],
+...
+```
+
+Another example of resource dependency for VM, which relies on **Storage account & NIC** (via its **resourceId**, of course)
+
+```
+/* resource definition */
+...
+{
+    "type": "Microsoft.Compute/virtualMachines",
+    "apiVersion": "2019-07-01",
+    "name": "[variables('vmName')]",
+    "location": "[parameters('location')]",
+    "tags": "[parameters('resourceTags')]",
+    "dependsOn":[
+      "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
+      "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+    ],
+ ...
+ ```
+ 
+ **Command:**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\3-resource-inter-dependency> 
+New-AzResourceGroupDeployment -Name "resourceinterdependency" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -TemplateParameterFile .\azuredeploy.parameters.json -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 20:22:10 - Template is valid.
+VERBOSE: 20:22:12 - Create template deployment 'resourceinterdependency'
+VERBOSE: 20:22:18 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:22:18 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:22:18 - Resource Microsoft.Storage/storageAccounts 'aznewstgbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:22:35 - Resource Microsoft.Network/networkInterfaces 'aznewnicbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:22:35 - Resource Microsoft.Network/virtualNetworks 'aznewvnetbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:22:35 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:22:35 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:22:41 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:22:41 - Resource Microsoft.Storage/storageAccounts 'aznewstgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:23:13 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is succeeded
+
+DeploymentName          : resourceinterdependency
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 14:53:12
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name                          Type                       Value
+                          ============================  =========================  ==========
+                          uniqueName                    String                     aznew
+                          storagereplicationstrategy    String                     Standard_LRS
+                          location                      String                     southindia
+                          dnslabelprefix                String                     mynewapp
+                          allAddrSpaces                 Object                     {
+                            "addressPrefixes": [
+                              {
+                                "name": "firstvnetPrefix",
+                                "addressPrefix": "10.0.0.0/16"
+                              },
+                              {
+                                "name": "secondvnetPrefix",
+                                "addressPrefix": "10.1.0.0/16"
+                              }
+                            ],
+                            "subnets": [
+                              {
+                                "name": "firstSubnet",
+                                "addressPrefix": "10.0.0.0/24"
+                              },
+                              {
+                                "name": "secondSubnet",
+                                "addressPrefix": "10.1.0.0/24"
+                              }
+                            ]
+                          }
+                          sizeofVM                      String                     Standard_DS1_v2
+                          windowsImageSKU               String                     2019-Datacenter
+                          computerName                  String                     windowsvm
+                          adminAccount                  String                     azureadmin
+                          adminPassword                 String                     Azurevm@4590
+                          resourceTags                  Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-inter-dependency-exercise"
+                          }
+
+Outputs                 :
+                          Name                 Type                       Value
+                          ===================  =========================  ==========
+                          storageEndpoint      Object                     {
+                            "dfs": "https://aznewstgbxmueijtaz47c.dfs.core.windows.net/",
+                            "web": "https://aznewstgbxmueijtaz47c.z30.web.core.windows.net/",
+                            "blob": "https://aznewstgbxmueijtaz47c.blob.core.windows.net/",
+                            "queue": "https://aznewstgbxmueijtaz47c.queue.core.windows.net/",
+                            "table": "https://aznewstgbxmueijtaz47c.table.core.windows.net/",
+                            "file": "https://aznewstgbxmueijtaz47c.file.core.windows.net/"
+                          }
+                          storageencryption    Object                     {
+                            "services": {
+                              "file": {
+                                "enabled": true,
+                                "lastEnabledTime": "2020-04-19T14:52:17.3247491Z"
+                              },
+                              "blob": {
+                                "enabled": true,
+                                "lastEnabledTime": "2020-04-19T14:52:17.3247491Z"
+                              }
+                            },
+                            "keySource": "Microsoft.Storage"
+                          }
+                          publicIPAddress      String                     104.211.211.58
+                          publicdnsSettings    Object                     {
+                            "domainNameLabel": "mynewapp",
+                            "fqdn": "mynewapp.southindia.cloudapp.azure.com"
+                          }
+                          vnetAddrSpace        Object                     {
+                            "addressPrefixes": [
+                              "10.0.0.0/16",
+                              "10.1.0.0/16"
+                            ]
+                          }
+                          vnetSubnet           Array                      [
+                            {
+                              "name": "firstSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/firstSubnet",
+                              "etag": "W/\"6de58d6c-eaa3-4357-ab7b-acbf7463044a\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.0.0.0/24",
+                                "networkSecurityGroup": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecurityGroups/aznewnsgbxmueijtaz47c"
+                                },
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            },
+                            {
+                              "name": "secondSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/secondSubnet",
+                              "etag": "W/\"6de58d6c-eaa3-4357-ab7b-acbf7463044a\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.1.0.0/24",
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            }
+                          ]
+                          nsgInfo              Array                      [
+                            {
+                              "name": "inbound-rdp-rules",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecurityGroups/aznewnsgbxmueijtaz47c/securityRules/inbound-rdp-rules",
+                              "etag": "W/\"cf0f8639-26cd-4844-9bf3-69095bb914da\"",
+                              "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "description": "default nsg template for nic",
+                                "protocol": "tcp",
+                                "sourcePortRange": "*",
+                                "destinationPortRange": "3389",
+                                "sourceAddressPrefix": "*",
+                                "destinationAddressPrefix": "VirtualNetwork",
+                                "access": "Allow",
+                                "priority": 100,
+                                "direction": "Inbound",
+                                "sourcePortRanges": [],
+                                "destinationPortRanges": [],
+                                "sourceAddressPrefixes": [],
+                                "destinationAddressPrefixes": []
+                              }
+                            }
+                          ]
+                          nicInfo              Array                      [
+                            {
+                              "name": "ipconfig1",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkInterfaces/aznewnicbxmueijtaz47c/ipConfigurations/ipconfig1",
+                              "etag": "W/\"bd06f0e2-ccd0-48ad-88d5-5720b30ff5c6\"",
+                              "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "privateIPAddress": "10.0.0.4",
+                                "privateIPAllocationMethod": "Dynamic",
+                                "publicIPAddress": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/publicIPAddresses/aznewipbxmueijtaz47c"
+                                },
+                                "subnet": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/firstSubnet"
+                                },
+                                "primary": true,
+                                "privateIPAddressVersion": "IPv4"
+                              }
+                            }
+                          ]
+                          vmInfo               Object                     {
+                            "vmId": "4325d8ee-786f-4f20-a89f-87cc2bfda7ed",
+                            "hardwareProfile": {
+                              "vmSize": "Standard_DS1_v2"
+                            },
+                            "storageProfile": {
+                              "imageReference": {
+                                "publisher": "MicrosoftWindowsServer",
+                                "offer": "WindowsServer",
+                                "sku": "2019-Datacenter",
+                                "version": "latest",
+                                "exactVersion": "17763.1158.2004131759"
+                              },
+                              "osDisk": {
+                                "osType": "Windows",
+                                "name": "aznewvmbxmueijtaz47c_disk1_e8eb3f1a82004f1392b97436448c39c4",
+                                "createOption": "FromImage",
+                                "caching": "ReadWrite",
+                                "managedDisk": {
+                                  "storageAccountType": "Premium_LRS",
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/AZURE-LAB-RG-01/providers/Microsoft.Compute/disks/aznewvmbxmueijtaz47c_disk1_e8eb3f1a82004f1392b97436448c39c4"
+                                },
+                                "diskSizeGB": 127
+                              },
+                              "dataDisks": []
+                            },
+                            "osProfile": {
+                              "computerName": "windowsvm",
+                              "adminUsername": "azureadmin",
+                              "windowsConfiguration": {
+                                "provisionVMAgent": true,
+                                "enableAutomaticUpdates": true
+                              },
+                              "secrets": [],
+                              "allowExtensionOperations": true,
+                              "requireGuestProvisionSignal": true
+                            },
+                            "networkProfile": {
+                              "networkInterfaces": [
+                                {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkInterfaces/aznewnicbxmueijtaz47c"
+                                }
+                              ]
+                            },
+                            "diagnosticsProfile": {
+                              "bootDiagnostics": {
+                                "enabled": true,
+                                "storageUri": "https://aznewstgbxmueijtaz47c.blob.core.windows.net/"
+                              }
+                            },
+                            "provisioningState": "Succeeded"
+                          }
+
+DeploymentDebugLogLevel :
+```
 
