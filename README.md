@@ -395,16 +395,25 @@ For ex: look at creation of a simple VM (see diagram below).
 
 a. **VM Creation** depends on 2 main components: _Storage Account_ & _Network-Interface-Card_
 
-b. NIC itself depends on _Public IP Address & "Virtual Network_ to be ready & online before it can be instantiated
+b. NIC itself depends on _Public IP Address & Virtual Network_ to be ready & online before it can be instantiated
 
 c. And lastly VNet depends entirely on a uniform "incoming/outgoing traffic" ruleset, namely: _Network Security Groups"_ which can be safely attached to its Subnet during VM creation
 
 ![](imgs/b-vm-creation-workflow.png)
 
-So its always advisable for the order of creation to
+So its always advisable from the order of creation to
 
 I. first **create independent components** (ex: _Storage account & Public IP Address_)
 
-II. then **create "semi-independent" components**  with first layer of dependency (ex: 
+II. then **create "semi-independent" components**  with first layer of dependency (ex: _Vnet & NSG_)
 
-(its recommended to attach NSG to subnet to homogenize the traffic security of VM's).
+III. and lastly, after all the other components (ex: _Storage account, Public IP Addr, Vnet, NSG_) are in place, you can safely create the NIC & then eventually the VM
+
+:pushpin: **Key Pointer(s):**
+
+1. Before proceeding to **create a multi-component resource**, please make **a simple flowchart of dependent & independent components**, as it helps in prioritization
+
+2. Secondly, its recommended to attach NSG to subnet to homogenize the traffic security of VM's
+
+3. And lastly, this VM creation process can be extended to add the next set of components such as **PS Desired Confiuguration/Custom Script extension**
+
