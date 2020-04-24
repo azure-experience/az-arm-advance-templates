@@ -7,7 +7,7 @@ A detailed run on few of the advance topics of ARM
 ### [3. Deploy a pre-defined template](#pre-defined-template)
 ### [4. Concurrent resource deployment](#concurrent-resource-creation)
 ### [5. Resource inter-dependency](#resource-inter-dependency)
-### [6. How to get output for your ARM templates?](#arm-generate-output)
+### [6. Usage of deployment scripts?](#deployment-scripts)
 ### [7. Usage of exported templates](#exported-templates)
 ### [8. Usage of quick start templates](#quick-start-templates)
 ### [9. Resource creation with tags](#resource-creation-tags)
@@ -721,4 +721,10 @@ Outputs                 :
 
 DeploymentDebugLogLevel :
 ```
+
+### <a name="deployment-scripts"></a>6. Usage of deployment scripts
+
+Deployment Scripts can be used in scenarios, where the custom steps are not possible due to limitations with ARM templates. As this feature is in preview mode (as on _Apr 24, 2020_), i havent dwelled in-depth on this topic.
+
+More notes on this topic will be performed and documented soon!
 
