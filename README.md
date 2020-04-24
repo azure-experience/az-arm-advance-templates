@@ -8,7 +8,7 @@ A detailed run on few of the advance topics of ARM
 ### [4. Concurrent resource deployment](#concurrent-resource-creation)
 ### [5. Resource inter-dependency](#resource-inter-dependency)
 ### [6. Usage of deployment scripts?](#deployment-scripts)
-### [7. Usage of exported templates](#exported-templates)
+### [7. Conditional-based deployment](#conditional-deployment)
 ### [8. Usage of quick start templates](#quick-start-templates)
 ### [9. Resource creation with tags](#resource-creation-tags)
 
@@ -412,7 +412,7 @@ III. and lastly, after all the other components (ex: _Storage account, Public IP
 
 :pushpin: **Key Pointer(s):**
 
-1. Before proceeding to **create a multi-component resource**, please make **a simple flowchart of dependent & independent components**, as it helps in prioritization
+1. Before proceeding to **create a multi-coupled resource**, please make **a simple flowchart of dependent & independent components**, as it helps in prioritization
 
 2. Secondly, its recommended to attach NSG to subnet to homogenize the traffic security of VM's
 
@@ -728,3 +728,140 @@ Deployment Scripts can be used in scenarios, where the custom steps are not poss
 
 More notes on this topic will be performed and documented soon!
 
+### <a name="conditional-deployment"></a>7. Conditional-based deployment
+|Property|Definition|
+|---|---|
+|Folder|[5-use-conditions](./5-use-conditions)|
+|File|_azuredeploy.json_|
+|ParameterFile|_azuredeploy.parameters.dev.json_|
+
+Sometimes, while creating multi-coupled resources, there comes a time when we can choose to create a resource **based on a certain criteria.** Criteria could range from
+
+a. create a resource when a certain "flag/signal" is invoked **(or)**
+
+b. create a resource subject to its pre-availability
+
+In such scenarios, it becomes quite handy to rely on **conditional resource deployment**, where you specify a condition under which a resource deployment call is triggered. Its highly advisable to use this option to **spin up only independent az resources within that multi-coupled resource deployment**, as the behavior of your deployment will be much more predictable. (i.e. no sporadic dependency failures)
+
+There are **2 steps** involved in using condition-based deployment
+
+1. define **a parameter** to capture the flags pertaining to usage of a condition (ex: parameter could be _"creationCondition"_, and flags could be _"yes"_ or _"no"_)
+
+2. consume this condition during the **resource definition** within the ARM template
+
+**Extract from the json file:**
+```
+/* parameter definition *?
+...
+"conditionParamsforStorage": {
+      "type": "string",
+      "allowedValues": [
+          "new",
+          "existing"
+      ]
+    },
+...
+
+/* resource definition *?
+...
+{
+    "condition": "[equals(parameters('conditionParamsforStorage'),'new')]",
+    "type": "Microsoft.Storage/storageAccounts",
+    "apiVersion": "2019-04-01",
+    "name": "[parameters('storageAccountName')]",
+    "tags": "[parameters('resourceTags')]",
+    "location": "[parameters('location')]",
+    "sku": {
+      "name": "[parameters('storagereplicationstrategy')]"
+    },
+...
+```
+
+**Command:**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\5-use-conditions> 
+New-AzResourceGroupDeployment -Name "conditionaldeployment" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -TemplateParameterFile .\azuredeploy.parameters.json \
+-storageAccountName "storage09az" -conditionParamsforStorage "new" -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 20:46:40 - Template is valid.
+VERBOSE: 20:46:42 - Create template deployment 'conditionaldeployment'
+VERBOSE: 20:46:47 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:46:47 - Resource Microsoft.Storage/storageAccounts 'storage09az' provisioning status is running
+VERBOSE: 20:46:47 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:47:04 - Resource Microsoft.Network/networkInterfaces 'aznewnicbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:47:04 - Resource Microsoft.Network/virtualNetworks 'aznewvnetbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:47:04 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:47:04 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 20:47:10 - Resource Microsoft.Storage/storageAccounts 'storage09az' provisioning status is succeeded
+VERBOSE: 20:47:15 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:47:46 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is succeeded
+
+DeploymentName          : conditionaldeployment
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 15:17:48
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name                          Type                       Value
+                          ============================  =========================  ==========
+                          uniqueName                    String                     aznew
+                          storageAccountName            String                     storage09az
+                          conditionParamsforStorage     String                     new
+                          storagereplicationstrategy    String                     Standard_LRS
+                          location                      String                     southindia
+                          dnslabelprefix                String                     mynewapp
+                          allAddrSpaces                 Object                     {
+                            "addressPrefixes": [
+                              {
+                                "name": "firstvnetPrefix",
+                                "addressPrefix": "10.0.0.0/16"
+                              },
+                              {
+                                "name": "secondvnetPrefix",
+                                "addressPrefix": "10.1.0.0/16"
+                              }
+                            ],
+                            "subnets": [
+                              {
+                                "name": "firstSubnet",
+                                "addressPrefix": "10.0.0.0/24"
+                              },
+                              {
+                                "name": "secondSubnet",
+                                "addressPrefix": "10.1.0.0/24"
+                              }
+                            ]
+                          }
+                          sizeofVM                      String                     Standard_DS1_v2
+                          windowsImageSKU               String                     2019-Datacenter
+                          computerName                  String                     windowsvm
+                          adminAccount                  String                     azureadmin
+                          adminPassword                 String                     Azurevm@4590
+                          resourceTags                  Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-condition-based-resource-creation"
+                          }
+
+Outputs                 :
+                          Name                 Type                       Value
+                          ===================  =========================  ==========
+                          publicIPAddress      String                     104.211.209.218
+                          publicdnsSettings    Object                     {
+                            "domainNameLabel": "mynewapp",
+                            "fqdn": "mynewapp.southindia.cloudapp.azure.com"
+                          }
+                          vnetAddrSpace        Object                     {
+                            "addressPrefixes": [
+                              "10.0.0.0/16",
+                              "10.1.0.0/16"
+                            ]
+                          }
+...
+/* output truncated as its similar to the previous command run */
+```
