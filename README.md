@@ -7,7 +7,7 @@ A detailed run on few of the advance topics of ARM
 ### [3. Deploy a pre-defined template](#pre-defined-template)
 ### [4. Concurrent resource deployment](#concurrent-resource-creation)
 ### [5. Resource inter-dependency](#resource-inter-dependency)
-### [6. Usage of deployment scripts?](#deployment-scripts)
+### [6. Usage of deployment scripts](#deployment-scripts)
 ### [7. Conditional-based deployment](#conditional-deployment)
 ### [8. Usage of quick start templates](#quick-start-templates)
 ### [9. Resource creation with tags](#resource-creation-tags)
