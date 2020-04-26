@@ -979,6 +979,10 @@ Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe 
 ```
 /* parameter definition */
 ...
+"adminAccount": {
+        "type": "string",
+        "value": "azureadmin"
+    },
 "adminPassword": {
         "type": "securestring",
         "reference": {
@@ -993,6 +997,8 @@ Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe 
 ```
 
 In this file, we explicitly **declare the resourceId** of the Keyvault resource, and point directly to the `secretName` (i.e. _vmAdminPassword_) as created in the prior step
+
+Also you will notice that the **default login to this VM**: _azureadmin_
 
 Now, lets run the command to **create the VM, in tact with the parameter files**
 
