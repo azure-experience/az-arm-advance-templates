@@ -11,6 +11,7 @@ A detailed run on few of the advance topics of ARM
 ### [7. Conditional-based deployment](#conditional-deployment)
 ### [8. Securitize credentials with Keyvault](#keyvault-for-credentials)
 ### [9. Usage of Linked templates](#linked-templates)
+### [10. Usage of VM extensions](#vm-extensions)
 
 --
 --
@@ -1537,3 +1538,11 @@ Outputs                 :
                           
 DeploymentDebugLogLevel :
 ```
+
+### <a name="vm-extensions"></a>10. Usage of VM extensions
+|Property|Definition|
+|---|---|
+|Folder|[8-use-vm-extensions](./8-use-vm-extensions)|
+|File|_azuredeploy.json_|
+
+As we had seen earlier with the [bare-metal VM creation procedure](#resource-inter-dependency), we can leverage an option to use **extensions on-top of your VM to install/configure custom software, packages, services, etc** in a much more autonomous mode,
