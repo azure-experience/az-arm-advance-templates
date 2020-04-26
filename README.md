@@ -873,7 +873,7 @@ Outputs                 :
 |Folder|[6-keyvault-for-secret-parameters](./6-keyvault-for-secret-parameters)|
 |KeyVauult File|_azuredeploy-keyvault.json_|
 |File|_azuredeploy.json_|
-|ParameterFile|_azuredeploy.parameters.dev.json_|
+|ParameterFile|_azuredeploy.parameters.json_|
 
 While creating VM' or any az resource, there is always a need to **secure your credentials**, such that they are not exposed either during the _creation, transit or deployed_ stage. Relying on **Azure Keyvault** becomes the absolute key.
 
