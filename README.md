@@ -389,7 +389,7 @@ DeploymentDebugLogLevel :
 |---|---|
 |Folder|[3-resource-inter-dependency](./3-resource-inter-dependency)|
 |File|_azuredeploy.json_|
-|ParameterFile|_azuredeploy.parameters.dev.json_|
+|ParameterFile|_azuredeploy.parameters.json_|
 
 At times, there will be a need to create a complex azure resource which interfaces (either directly or indirectly) with other az resources. Its important to know the **"sequential-order-of-creation"** to help create first the independent resource & then the dependent resource for the right execution.
 
