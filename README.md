@@ -1230,7 +1230,310 @@ After this VM creation is complete, you can **directly try to connect to this VM
 |StorageAccount File|_azuredeploy.storageaccount.json_|
 |File|_azuredeploy.json_|
 
-This concept of using **linked templates**, is especially helpful, when you **have templatized a az resource, and have uploaded its template in an external site** (ex: could be in a ftp server or within a blob (container)), and its right then, you **wish to deploy a new resource, by referencing the same template.**
+This concept of using **linked templates**, is especially helpful, when you **have templatized a az resource, and have uploaded its template in an external site** (ex: could be in a **ftp server** or within a **blob (container)** in Azure), and its right then, you **wish to deploy a new resource, by referencing the same template.**
 
-In this example, we have built a template for storage account, and have deployed it within its blob container
+In this simulation, we have 
 
+a. built a **template for storage account**: _azuredeploy.storageaccount.json_
+
+b. created a storage account by name: _storagetemplatefolder_, based on that template
+
+c. then proceed to **create a sample blob container**: _az-storage-template-folder_, and have uploaded this very template within this container. This will ensure that **for linked-based templates, the template can be accessed from this container**
+
+b. and lastly, have proceeded to **create a complete VM** (including the **storage account from this template URL of the blob container**)
+
+So lets begin first with **creation of a storage account & the subsequent blob (container)**
+
+**Extract from the json file:**
+```
+/* parameter definition */
+...
+"parameters": {
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "storagetemplatefolder",
+      "minLength": 3,
+      "maxLength": 24
+    },
+...
+```
+**Command (for Storage Account creation):**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\7-linked-templates> 
+New-AzResourceGroupDeployment -Name "storageaccountlink" \
+-ResourceGroupName "azure-lab-rg-01" -TemplateFile .\azuredeploy.storageaccount.json \
+-Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 19:42:45 - Template is valid.
+VERBOSE: 19:42:47 - Create template deployment 'storageaccountlink'
+VERBOSE: 19:42:58 - Resource Microsoft.Storage/storageAccounts 'storagetemplatefolder' provisioning status is running
+VERBOSE: 19:43:17 - Resource Microsoft.Storage/storageAccounts 'storagetemplatefolder' provisioning status is succeeded
+
+DeploymentName          : storageaccountlink
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 26-04-2020 14:13:13
+Mode                    : Incremental
+TemplateLink            : 
+Parameters              : 
+                          Name                          Type                       Value     
+                          ============================  =========================  ==========
+                          storageAccountName            String                     storagetemplatefolder
+                          storagereplicationstrategy    String                     Standard_LRS
+                          location                      String                     southindia
+                          resourceTags                  Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-linked-template"
+                          }
+                          
+Outputs                 : 
+                          Name                     Type                       Value     
+                          =======================  =========================  ==========
+                          storageEndpointBlob      String                     https://storagetemplatefolder.blob.core.windows.net/
+                          storageencryptionBlob    Object                     {
+                            "enabled": true,
+                            "lastEnabledTime": "2020-04-26T14:12:51.9166378Z"
+                          }
+                          
+DeploymentDebugLogLevel : 
+```
+
+After the storageAccount: **storagetemplatefolder** is created, proceed to create a blob (container) by name: _"az-storage-template-folder"_, and upload this template file: _azuredeploy.storageaccount.json_ within that blob.
+
+Now at the last step, lets try to deploy the main json file: _azuredeploy.json_ which **encompasses the complete URL to the storage account template**.
+
+**Extract from the json file:**
+```
+/* parameter definition */
+...
+"storageAccountLinkedTemplateURI": {
+        "type": "string",
+		/* preferred approach would be to use SAS token, instead of direct URL */
+        "defaultValue": "https://storagetemplatefolder.blob.core.windows.net/az-storage-template- \
+                        folder/azuredeploy.storageaccount.json"
+},
+...
+
+/* variable definition */
+...
+"variables": {
+    // drop the storage account name variable, as we rely on condition-based resource creation
+    "storageAccountName": "[concat(parameters('uniqueName'), 'stg', uniquestring(resourceGroup().id))]",
+...  
+
+/* resource definition */
+...
+{
+    "type": "Microsoft.Resources/deployments",
+    "apiVersion": "2019-08-01",
+    "name": "storageAccountLinkedTemplate",
+    "tags": "[parameters('resourceTags')]",
+    "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+            "uri": "[parameters('storageAccountLinkedTemplateURI')]"
+        },
+        "parameters": {
+            "storageAccountName": {"value": "[variables('storageAccountName')]"},
+            "location": {"value": "[parameters('location')]"},
+            "storagereplicationstrategy": {"value": "[parameters('storagereplicationstrategy')]"},
+            "resourceTags": {"value": "[parameters('resourceTags')]"}
+        }
+      }
+    },
+...
+```
+
+:pushpin: **Key Pointer(s):**
+
+1. In the parameter definition, we have given the **absolute path to the template file**, and the permissions given on this container is of **blob** privilege. Instead of giving absolute path, for **enhanced security**, you can **generate SAS token for the template file**, and append the same in the URL section
+
+2. A variable name: `storageAccountName` has also been defined to inject them during resource creation
+
+3. and lastly, a resource of type: `"Microsoft.Resources/deployments"` is used to satisfy the **use-case of deploying a az resource based on a pre-available template**. 
+
+4. **Its highly recommended to understand the parameters (for your az resource) that your template needs before calling this resource type**
+
+Now, lets run the command to **create the VM, in tact with the parameter files.**
+
+**Command (for VM creation):**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\7-linked-templates> 
+New-AzResourceGroupDeployment -Name "linkedtemplatecreation" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 19:49:41 - Template is valid.
+VERBOSE: 19:49:43 - Create template deployment 'linkedtemplatecreation'
+VERBOSE: 19:49:49 - Resource Microsoft.Resources/deployments 'storageAccountLinkedTemplate' provisioning status is running
+VERBOSE: 19:49:55 - Resource Microsoft.Network/virtualNetworks 'aznewvnetbxmueijtaz47c' provisioning status is running
+VERBOSE: 19:49:55 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:49:55 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:49:55 - Resource Microsoft.Storage/storageAccounts 'aznewstgbxmueijtaz47c' provisioning status is running
+VERBOSE: 19:50:10 - Resource Microsoft.Network/networkInterfaces 'aznewnicbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:50:10 - Resource Microsoft.Network/virtualNetworks 'aznewvnetbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:50:22 - Resource Microsoft.Storage/storageAccounts 'aznewstgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 19:50:27 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is running
+VERBOSE: 19:50:27 - Resource Microsoft.Resources/deployments 'storageAccountLinkedTemplate' provisioning status is succeeded
+VERBOSE: 19:52:43 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is succeeded
+
+DeploymentName          : linkedtemplatecreation
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 26-04-2020 14:22:41
+Mode                    : Incremental
+TemplateLink            : 
+Parameters              : 
+                          Name                               Type                       Value     
+                          =================================  =========================  ==========
+                          uniqueName                         String                     aznew     
+                          storageAccountLinkedTemplateURI    String                     
+                          https://storagetemplatefolder.blob.core.windows.net/az-storage-template-folder/azuredeploy.storageaccount.json
+                          storagereplicationstrategy         String                     Standard_LRS
+                          location                           String                     southindia
+                          dnslabelprefix                     String                     mynewapp  
+                          allAddrSpaces                      Object                     {
+                            "addressPrefixes": [
+                              {
+                                "name": "firstvnetPrefix",
+                                "addressPrefix": "10.0.0.0/16"
+                              },
+                              {
+                                "name": "secondvnetPrefix",
+                                "addressPrefix": "10.1.0.0/16"
+                              }
+                            ],
+                            "subnets": [
+                              {
+                                "name": "firstSubnet",
+                                "addressPrefix": "10.0.0.0/24"
+                              },
+                              {
+                                "name": "secondSubnet",
+                                "addressPrefix": "10.1.0.0/24"
+                              }
+                            ]
+                          }
+                          sizeofVM                           String                     Standard_DS1_v2
+                          windowsImageSKU                    String                     2019-Datacenter
+                          computerName                       String                     mywinvm   
+                          adminAccount                       String                     azureadmin
+                          adminPassword                      String                     Azurevm@123
+                          resourceTags                       Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-linked-template"
+                          }
+                          
+Outputs                 : 
+                          Name                 Type                       Value     
+                          ===================  =========================  ==========
+                          publicIPAddress      String                     104.211.213.197
+                          publicdnsSettings    Object                     {
+                            "domainNameLabel": "mynewapp",
+                            "fqdn": "mynewapp.southindia.cloudapp.azure.com"
+                          }
+                          vnetAddrSpace        Object                     {
+                            "addressPrefixes": [
+                              "10.0.0.0/16",
+                              "10.1.0.0/16"
+                            ]
+                          }
+                          vnetSubnet           Array                      [
+                            {
+                              "name": "firstSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks
+                          /aznewvnetbxmueijtaz47c/subnets/firstSubnet",
+                              "etag": "W/\"64425f79-c9a8-4c17-90ce-cff0a3867d78\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.0.0.0/24",
+                                "networkSecurityGroup": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecu
+                          rityGroups/aznewnsgbxmueijtaz47c"
+                                },
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            },
+                            {
+                              "name": "secondSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks
+                          /aznewvnetbxmueijtaz47c/subnets/secondSubnet",
+                              "etag": "W/\"64425f79-c9a8-4c17-90ce-cff0a3867d78\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.1.0.0/24",
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            }
+                          ]
+                          nsgInfo              Array                      [
+                            {
+                              "name": "inbound-rdp-rules",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecurity
+                          Groups/aznewnsgbxmueijtaz47c/securityRules/inbound-rdp-rules",
+                              "etag": "W/\"d214eb37-884a-49cc-b5c2-ada884fbf3f8\"",
+                              "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "description": "default nsg template for nic",
+                                "protocol": "tcp",
+                                "sourcePortRange": "*",
+                                "destinationPortRange": "3389",
+                                "sourceAddressPrefix": "*",
+                                "destinationAddressPrefix": "VirtualNetwork",
+                                "access": "Allow",
+                                "priority": 100,
+                                "direction": "Inbound",
+                                "sourcePortRanges": [],
+                                "destinationPortRanges": [],
+                                "sourceAddressPrefixes": [],
+                                "destinationAddressPrefixes": []
+                              }
+                            }
+                          ]
+                          nicInfo              Array                      [
+                            {
+                              "name": "ipconfig1",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkInterfac
+                          es/aznewnicbxmueijtaz47c/ipConfigurations/ipconfig1",
+                              "etag": "W/\"72b285f8-a277-4e41-a321-769bf9f5e53e\"",
+                              "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "privateIPAddress": "10.0.0.4",
+                                "privateIPAllocationMethod": "Dynamic",
+                                "publicIPAddress": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/publicIPAdd
+                          resses/aznewipbxmueijtaz47c"
+                                },
+                                "subnet": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetw
+                          orks/aznewvnetbxmueijtaz47c/subnets/firstSubnet"
+                                },
+                                "primary": true,
+                                "privateIPAddressVersion": "IPv4"
+                              }
+                            }
+                          ]
+                          vmInfo               Object                     {
+                            "bootDiagnostics": {
+                              "enabled": true,
+                              "storageUri": "https://aznewstgbxmueijtaz47c.blob.core.windows.net/"
+                            }
+                          }
+                          
+DeploymentDebugLogLevel :
+```
