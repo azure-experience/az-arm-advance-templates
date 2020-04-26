@@ -9,7 +9,8 @@
       },
     "storageAccountLinkedTemplateURI": {
         "type": "string",
-        "defaultValue": "https://azfolder.blob.core.windows.net/newcontainer/azuredeploy.storageaccount.json?sp=r&st=2020-04-19T16:00:55Z&se=2020-04-20T00:00:55Z&spr=https&sv=2019-02-02&sr=b&sig=hNyXZKfXJOIoBRh%2BnjiQV%2F5%2F%2FZFJnUn%2Fipmmolezu1c%3D"
+		/* preferred approach would be to use SAS token, instead of direct URL */
+        "defaultValue": "https://storagetemplatefolder.blob.core.windows.net/az-storage-template-folder/azuredeploy.storageaccount.json"
       },
 
     // dont need to mention anything about storage account, as it comes from linked template  
@@ -26,7 +27,7 @@
           "existing"
       ]
 }, */
-    /* "storagereplicationstrategy": {
+    "storagereplicationstrategy": {
       "type": "string",
       "defaultValue": "Standard_LRS",
       "allowedValues": [
@@ -38,7 +39,7 @@
       "metadata": {
         "description": "Storage Account type"
       }
-    }, */
+    },
     "location": {
       "type": "string",
       /* "defaultValue": "[resourceGroup().location]", */
@@ -135,7 +136,7 @@
   },
   "variables": {
     // drop the storage account name variable, as we rely on condition-based resource creation
-    /* "storageAccountName": "[concat(parameters('storageName'), 'stg', uniquestring(resourceGroup().id))]", */
+    "storageAccountName": "[concat(parameters('uniqueName'), 'stg', uniquestring(resourceGroup().id))]",
     "publicIPAddressName": "[concat(parameters('uniqueName'), 'ip', uniquestring(resourceGroup().id))]",
     "vnetName": "[concat(parameters('uniqueName'), 'vnet', uniquestring(resourceGroup().id))]",
     "nsgName": "[concat(parameters('uniqueName'), 'nsg', uniquestring(resourceGroup().id))]",
@@ -170,13 +171,13 @@
         "mode": "Incremental",
         "templateLink": {
             "uri": "[parameters('storageAccountLinkedTemplateURI')]"
-        }
-        /* "parameters": {
-            "storageAccountName": {"value": "[parameters('storageAccountName')]"},
+        },
+        "parameters": {
+            "storageAccountName": {"value": "[variables('storageAccountName')]"},
             "location": {"value": "[parameters('location')]"},
             "storagereplicationstrategy": {"value": "[parameters('storagereplicationstrategy')]"},
             "resourceTags": {"value": "[parameters('resourceTags')]"}
-        } */
+        }
       }
     },  
   /* {

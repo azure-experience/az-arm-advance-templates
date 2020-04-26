@@ -4,7 +4,7 @@
   "parameters": {
     "storageAccountName": {
       "type": "string",
-      "defaultValue": "azstorage123",
+      "defaultValue": "storagetemplatefolder",
       "minLength": 3,
       "maxLength": 24
     },
