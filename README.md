@@ -9,7 +9,7 @@ A detailed run on few of the advance topics of ARM
 ### [5. Resource inter-dependency](#resource-inter-dependency)
 ### [6. Usage of deployment scripts](#deployment-scripts)
 ### [7. Conditional-based deployment](#conditional-deployment)
-### [8. Usage of quick start templates](#quick-start-templates)
+### [8. Securitize credentials with Keyvault](#keyvault-for-credentials)
 ### [9. Resource creation with tags](#resource-creation-tags)
 
 --
@@ -343,7 +343,7 @@ Sometimes there are scenarios, where you might need to **deploy multiple, identi
 ...
 ```
 
-:memo: **Key-note:**
+:pushpin: **Key-pointer(s):**
 
 When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation
 
@@ -452,7 +452,7 @@ Please see the resource definition for the **NSG** defined here [it allows incom
   ...
   ```
   
-  Now check the resource definition for **VNet**, which directly depends on the NSG to be pre-created & ready. Vnet resource references the **resourceId for the NSG** (which is available after its creation). It relies on the usage of **dependsOn** method within a resource definition
+Now check the resource definition for **VNet**, which directly depends on the NSG to be pre-created & ready. Vnet resource references the **resourceId for the NSG** (which is available after its creation). It relies on the usage of **dependsOn** method within a resource definition
 
 ```
 /* parameter definition */
@@ -864,4 +864,109 @@ Outputs                 :
                           }
 ...
 /* output truncated as its similar to the previous command run */
+```
+
+### <a name="keyvault-for-credentials"></a>8. Securitize credentials with Keyvault
+|Property|Definition|
+|---|---|
+|Folder|[6-keyvault-for-secret-parameters](./6-keyvault-for-secret-parameters)|
+|KeyVauult File|_azuredeploy-keyvault.json_|
+|File|_azuredeploy.json_|
+|ParameterFile|_azuredeploy.parameters.dev.json_|
+
+While creating VM' or any az resource, there is always a need to **secure your credentials**, such that they are not exposed either during the _creation, transit or deployed_ stage. Relying on **Azure Keyvault** becomes the absolute key.
+
+In this example (for VM creation), we try to 
+
+a. first create a **az keyvault**, and store the **VM's credentials** safely inside the keyvault
+
+b. and lastly, **inject the secure password** (from _az keyvault_) directly **as a parameter** into the VM creation section
+
+So lets begin first with **creation of a keyvault**, and **build the secret credentials**
+
+**Extract from the json file:**
+```
+/* parameter definition */
+...
+"secretName": {
+      "type": "string",
+      "defaultValue": "vmAdminPassword"
+},
+"secretValue": {
+      "type": "securestring"
+},
+...
+
+/* resource definition */
+...
+ {
+    "type": "Microsoft.KeyVault/vaults/secrets",
+    "apiVersion": "2018-02-14",
+    // as the child: secret is outside of parent (kv) resource scope, it needs to be of format: parent/child
+    "name": "[concat(variables('keyVaultName'), '/', parameters('secretName'))]",
+    "tags": "[parameters('resourceTags')]",
+    "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+    ],
+    "properties": {
+      "value": "[parameters('secretValue')]",
+      "contentType": "string"
+    }
+  }
+],
+...
+```
+
+:pushpin: **Key Pointer(s):**
+
+1. Here in the parameter definition, as we have declared `secretValue` of type: `securestring`, which gives us a chance from the UI, **to inject a password, which will not be visible at the creation time**
+
+2. Secondly, from the above parameter definition, you will notice that the _resource: */vaults/secrets_ creation is **actually a "child"** of the parent _resource: */vaults_, which is the reason for the direct-dependency to be there
+
+**Command (for KeyVault creation):**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\6-keyvault-for-secret-parameters> 
+New-AzResourceGroupDeployment -Name "keyvaultcreation" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy-keyvault.json -Verbose
+
+cmdlet New-AzResourceGroupDeployment at command pipeline position 1
+Supply values for the following parameters:
+(Type !? for Help.)
+secretValue: ************
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 20:53:08 - Template is valid.
+VERBOSE: 20:53:10 - Create template deployment 'keyvaultcreation'
+VERBOSE: 20:53:21 - Resource Microsoft.KeyVault/vaults 'azkvbxmueijtaz47c' provisioning status is running
+VERBOSE: 20:53:38 - Resource Microsoft.KeyVault/vaults/secrets 'azkvbxmueijtaz47c/vmAdminPassword' provisioning status is succeeded
+VERBOSE: 20:53:38 - Resource Microsoft.KeyVault/vaults 'azkvbxmueijtaz47c' provisioning status is succeeded
+
+DeploymentName          : keyvaultcreation
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 15:23:36
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name             Type                       Value
+                          ===============  =========================  ==========
+                          uniqueName       String                     az
+                          location         String                     southindia
+                          adUserId         String                     0164c813-8650-4e2f-b4bb-3d2d6de7bf2e
+                          secretName       String                     vmAdminPassword
+                          secretValue      SecureString
+                          resourceTags     Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-keyvault-exercise"
+                          }
+
+Outputs                 :
+                          Name             Type                       Value
+                          ===============  =========================  ==========
+                          vaultUri         String                     https://azkvbxmueijtaz47c.vault.azure.net/
+
+DeploymentDebugLogLevel :
 ```
