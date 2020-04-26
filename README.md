@@ -880,7 +880,7 @@ In this example (for VM creation), we try to
 
 a. first create a **az keyvault**, and store the **VM's credentials** safely inside the keyvault
 
-b. and lastly, **inject the secure password** (from _az keyvault_) directly **as a parameter** into the VM creation section
+b. and lastly, **inject the secure password** (from _az keyvault_) directly **as a parameter** into the VM creation stage
 
 So lets begin first with **creation of a keyvault**, and **build the secret credentials**
 
@@ -919,7 +919,7 @@ So lets begin first with **creation of a keyvault**, and **build the secret cred
 
 :pushpin: **Key Pointer(s):**
 
-1. Here in the parameter definition, as we have declared `secretValue` of type: `securestring`, which gives us a chance from the UI, **to inject a password, which will not be visible at the creation time**
+1. Here in the parameter definition, as we have declared `secretValue` of type: `"securestring"`, which gives us a chance from the console, **to inject a password, which will not be visible at the creation time**
 
 2. Secondly, from the above parameter definition, you will notice that the _resource: */vaults/secrets_ creation is **actually a "child"** of the parent _resource: */vaults_, which is the reason for the direct-dependency to be there
 
@@ -970,3 +970,249 @@ Outputs                 :
 
 DeploymentDebugLogLevel :
 ```
+--
+
+Now after the **az keyvault** is created with **stored secret credentials**, its now time to build the parameter file to help **inject this very credentials** during the VM creation stage
+
+Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe this parameter section, where the **keyvault reference** is completed
+
+```
+/* parameter definition */
+...
+"adminPassword": {
+        "type": "securestring",
+        "reference": {
+        "keyVault": {
+            "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg- \
+                  01/providers/Microsoft.KeyVault/vaults/azkvbxmueijtaz47c"
+        },
+        "secretName": "vmAdminPassword"
+      }
+    }
+...
+```
+
+In this file, we explicitly **declare the resourceId** of the Keyvault resource, and point directly to the `secretName` (i.e. _vmAdminPassword_) as created in the prior step
+
+Now, lets run the command to **create the VM, in tact with the parameter files**
+
+**Command (for VM creation):**
+```
+PS C:\Users\nagarjun k\Documents\az-journey\arm\b-advance\6-keyvault-for-secret-parameters> 
+New-AzResourceGroupDeployment -Name "keyvaultintegration" -ResourceGroupName "azure-lab-rg-01" \
+-TemplateFile .\azuredeploy.json -TemplateParameterFile .\azuredeploy.parameters.json \
+-storageAccountName "azold" -conditionParamsforStorage "new" -Verbose
+```
+
+**Output:**
+```
+VERBOSE: Performing the operation "Creating Deployment" on target "azure-lab-rg-01".
+VERBOSE: 21:02:42 - Template is valid.
+VERBOSE: 21:02:45 - Create template deployment 'keyvaultintegration'
+VERBOSE: 21:02:51 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is running
+VERBOSE: 21:02:51 - Resource Microsoft.Storage/storageAccounts 'azold' provisioning status is running
+VERBOSE: 21:02:51 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is running
+VERBOSE: 21:03:07 - Resource Microsoft.Network/networkInterfaces 'aznewnicbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 21:03:07 - Resource Microsoft.Network/virtualNetworks 'aznewvnetbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 21:03:07 - Resource Microsoft.Network/publicIPAddresses 'aznewipbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 21:03:07 - Resource Microsoft.Network/networkSecurityGroups 'aznewnsgbxmueijtaz47c' provisioning status is succeeded
+VERBOSE: 21:03:13 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is running
+VERBOSE: 21:03:14 - Resource Microsoft.Storage/storageAccounts 'azold' provisioning status is succeeded
+VERBOSE: 21:03:51 - Resource Microsoft.Compute/virtualMachines 'aznewvmbxmueijtaz47c' provisioning status is succeeded
+
+DeploymentName          : keyvaultintegration
+ResourceGroupName       : azure-lab-rg-01
+ProvisioningState       : Succeeded
+Timestamp               : 19-04-2020 15:33:51
+Mode                    : Incremental
+TemplateLink            :
+Parameters              :
+                          Name                          Type                       Value
+                          ============================  =========================  ==========
+                          uniqueName                    String                     aznew
+                          storageAccountName            String                     azold
+                          conditionParamsforStorage     String                     new
+                          storagereplicationstrategy    String                     Standard_LRS
+                          location                      String                     southindia
+                          dnslabelprefix                String                     mynewapp
+                          allAddrSpaces                 Object                     {
+                            "addressPrefixes": [
+                              {
+                                "name": "firstvnetPrefix",
+                                "addressPrefix": "10.0.0.0/16"
+                              },
+                              {
+                                "name": "secondvnetPrefix",
+                                "addressPrefix": "10.1.0.0/16"
+                              }
+                            ],
+                            "subnets": [
+                              {
+                                "name": "firstSubnet",
+                                "addressPrefix": "10.0.0.0/24"
+                              },
+                              {
+                                "name": "secondSubnet",
+                                "addressPrefix": "10.1.0.0/24"
+                              }
+                            ]
+                          }
+                          sizeofVM                      String                     Standard_DS1_v2
+                          windowsImageSKU               String                     2019-Datacenter
+                          computerName                  String                     mywinvm
+                          adminAccount                  String                     azureadmin
+                          adminPassword                 String
+                          resourceTags                  Object                     {
+                            "environment": "simulation",
+                            "lab-simulation": "arm-template-keyvault-secret-integration"
+                          }
+
+Outputs                 :
+                          Name                 Type                       Value
+                          ===================  =========================  ==========
+                          publicIPAddress      String                     104.211.231.138
+                          publicdnsSettings    Object                     {
+                            "domainNameLabel": "mynewapp",
+                            "fqdn": "mynewapp.southindia.cloudapp.azure.com"
+                          }
+                          vnetAddrSpace        Object                     {
+                            "addressPrefixes": [
+                              "10.0.0.0/16",
+                              "10.1.0.0/16"
+                            ]
+                          }
+                          vnetSubnet           Array                      [
+                            {
+                              "name": "firstSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/firstSubnet",
+                              "etag": "W/\"75e0fab1-ea3a-4b0f-8ede-0b2584ce7de6\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.0.0.0/24",
+                                "networkSecurityGroup": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecurityGroups/aznewnsgbxmueijtaz47c"
+                                },
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            },
+                            {
+                              "name": "secondSubnet",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/secondSubnet",
+                              "etag": "W/\"75e0fab1-ea3a-4b0f-8ede-0b2584ce7de6\"",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "addressPrefix": "10.1.0.0/24",
+                                "delegations": [],
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                              },
+                              "type": "Microsoft.Network/virtualNetworks/subnets"
+                            }
+                          ]
+                          nsgInfo              Array                      [
+                            {
+                              "name": "inbound-rdp-rules",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkSecurityGroups/aznewnsgbxmueijtaz47c/securityRules/inbound-rdp-rules",
+                              "etag": "W/\"ea92794e-c08a-4b0e-81e0-7092c81c0e45\"",
+                              "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "description": "default nsg template for nic",
+                                "protocol": "tcp",
+                                "sourcePortRange": "*",
+                                "destinationPortRange": "3389",
+                                "sourceAddressPrefix": "*",
+                                "destinationAddressPrefix": "VirtualNetwork",
+                                "access": "Allow",
+                                "priority": 100,
+                                "direction": "Inbound",
+                                "sourcePortRanges": [],
+                                "destinationPortRanges": [],
+                                "sourceAddressPrefixes": [],
+                                "destinationAddressPrefixes": []
+                              }
+                            }
+                          ]
+                          nicInfo              Array                      [
+                            {
+                              "name": "ipconfig1",
+                              "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkInterfaces/aznewnicbxmueijtaz47c/ipConfigurations/ipconfig1",
+                              "etag": "W/\"895b64c5-3511-426c-b137-b9ae4f14223d\"",
+                              "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+                              "properties": {
+                                "provisioningState": "Succeeded",
+                                "privateIPAddress": "10.0.0.4",
+                                "privateIPAllocationMethod": "Dynamic",
+                                "publicIPAddress": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/publicIPAddresses/aznewipbxmueijtaz47c"
+                                },
+                                "subnet": {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/virtualNetworks/aznewvnetbxmueijtaz47c/subnets/firstSubnet"
+                                },
+                                "primary": true,
+                                "privateIPAddressVersion": "IPv4"
+                              }
+                            }
+                          ]
+                          vmInfo               Object                     {
+                            "vmId": "4368d2d9-aa72-45d7-a71a-f9a1e445f47d",
+                            "hardwareProfile": {
+                              "vmSize": "Standard_DS1_v2"
+                            },
+                            "storageProfile": {
+                              "imageReference": {
+                                "publisher": "MicrosoftWindowsServer",
+                                "offer": "WindowsServer",
+                                "sku": "2019-Datacenter",
+                                "version": "latest",
+                                "exactVersion": "17763.1158.2004131759"
+                              },
+                              "osDisk": {
+                                "osType": "Windows",
+                                "name": "aznewvmbxmueijtaz47c_disk1_89e7678964584a9b9a0474b910eaedc3",
+                                "createOption": "FromImage",
+                                "caching": "ReadWrite",
+                                "managedDisk": {
+                                  "storageAccountType": "Premium_LRS",
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/AZURE-LAB-RG-01/providers/Microsoft.Compute/disks/aznewvmbxmueijtaz47c_disk1_89e7678964584a9b9a0474b910eaedc3"
+                                },
+                                "diskSizeGB": 127
+                              },
+                              "dataDisks": []
+                            },
+                            "osProfile": {
+                              "computerName": "mywinvm",
+                              "adminUsername": "azureadmin",
+                              "windowsConfiguration": {
+                                "provisionVMAgent": true,
+                                "enableAutomaticUpdates": true
+                              },
+                              "secrets": [],
+                              "allowExtensionOperations": true,
+                              "requireGuestProvisionSignal": true
+                            },
+                            "networkProfile": {
+                              "networkInterfaces": [
+                                {
+                                  "id": "/subscriptions/2f981ee7-6c60-4593-bc4b-82c9b050f722/resourceGroups/azure-lab-rg-01/providers/Microsoft.Network/networkInterfaces/aznewnicbxmueijtaz47c"
+                                }
+                              ]
+                            },
+                            "diagnosticsProfile": {
+                              "bootDiagnostics": {
+                                "enabled": true,
+                                "storageUri": "https://azold.blob.core.windows.net/"
+                              }
+                            },
+                            "provisioningState": "Succeeded"
+                          }
+
+DeploymentDebugLogLevel :
+```
+
+After this VM creation is complete, you can **directly try to connect to this VM** (via RDP of course!), and then login to the VM with the username: _azureadmin_ & then enter the **same password** which you had typed for the `secretValue` during the keyvault creation. 
+
+**You would be able to login without any hitch, (in a very secure mode of course!)**
