@@ -10,7 +10,7 @@ A detailed run on few of the advance topics of ARM
 ### [6. Usage of deployment scripts](#deployment-scripts)
 ### [7. Conditional-based deployment](#conditional-deployment)
 ### [8. Securitize credentials with Keyvault](#keyvault-for-credentials)
-### [9. Resource creation with tags](#resource-creation-tags)
+### [9. Usage of Linked templates](#linked-templates)
 
 --
 --
@@ -244,7 +244,7 @@ DeploymentDebugLogLevel :
 |Folder|[1-quick-template-reference](./1-quick-template-reference)|
 |File|_azuredeploy.json_|
 
-We can always rely on the ["pre-defined" templates](https://github.com/Azure/azure-quickstart-templates) already provided for Azure resources (within github). It could save you a lot of configuration time and speed up new resource creation for any az service
+We can always rely on the ["pre-defined" templates](https://github.com/Azure/azure-quickstart-templates) already provided for Azure resources (within github). It could save you a lot of configuration time and speed up new resource creation for any az service.
 
 ![](imgs/a-github-quick-start-az-templates.png)
 
@@ -318,7 +318,7 @@ DeploymentDebugLogLevel :
 |Folder|[2-multiple-concurrent-copies](./2-multiple-concurrent-copies)|
 |File|_azuredeploy.json_|
 
-Sometimes there are scenarios, where you might need to **deploy multiple, identical copy of az resources**, which can be accomplished by usage of _copyIndex_ function. Below we are trying to **create 3 storage accounts of identical configuration** in the same region 
+Sometimes there are scenarios, where you might need to **deploy multiple, identical copy of az resources**, which can be accomplished by usage of _copyIndex_ function. Below we are trying to **create 3 storage accounts of identical configuration** in the same region. 
 
 **Extract from the json file:**
 ```
@@ -345,7 +345,7 @@ Sometimes there are scenarios, where you might need to **deploy multiple, identi
 
 :pushpin: **Key-pointer(s):**
 
-When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation
+When you are trying to create identical copy of the az resources, **please dont declare a parameter or variable explicitly**, as it works well if the resource name is directly coded during its creation.
 
 **Command:**
 ```
@@ -420,7 +420,7 @@ III. and lastly, after all the other components (ex: _Storage account, Public IP
 
 **Extract from the json file:**
 
-Please see the resource definition for the **NSG** defined here [it allows incoming RDP connections to that VM (port _3389_)]
+Please see the resource definition for the **NSG** defined here [it allows incoming RDP connections to that VM (port _3389_)].
 ```
 /* resource definition *?
 ...
@@ -452,7 +452,7 @@ Please see the resource definition for the **NSG** defined here [it allows incom
   ...
   ```
   
-Now check the resource definition for **VNet**, which directly depends on the NSG to be pre-created & ready. Vnet resource references the **resourceId for the NSG** (which is available after its creation). It relies on the usage of **dependsOn** method within a resource definition
+Now check the resource definition for **VNet**, which directly depends on the NSG to be pre-created & ready. Vnet resource references the **resourceId for the NSG** (which is available after its creation). It relies on the usage of **dependsOn** method within a resource definition.
 
 ```
 /* parameter definition */
@@ -469,7 +469,7 @@ Now check the resource definition for **VNet**, which directly depends on the NS
 ...
 ```
 
-Another example of resource dependency for VM, which relies on **Storage account & NIC** (via its **resourceId**, of course)
+Another example of resource dependency for VM, which relies on **Storage account & NIC** (via its **resourceId**, of course).
 
 ```
 /* resource definition */
@@ -741,7 +741,7 @@ a. create a resource when a certain "flag/signal" is invoked **(or)**
 
 b. create a resource subject to its pre-availability
 
-In such scenarios, it becomes quite handy to rely on **conditional resource deployment**, where you specify a condition under which a resource deployment call is triggered. Its highly advisable to use this option to **spin up only independent az resources within that multi-coupled resource deployment**, as the behavior of your deployment will be much more predictable. (i.e. no sporadic dependency failures)
+In such scenarios, it becomes quite handy to rely on **conditional resource deployment**, where you specify a condition under which a resource deployment call is triggered. Its highly advisable to use this option to **spin up only independent az resources within that multi-coupled resource deployment**, as the behavior of your deployment will be much more predictable. (i.e. no sporadic dependency failures).
 
 There are **2 steps** involved in using condition-based deployment
 
@@ -972,9 +972,9 @@ DeploymentDebugLogLevel :
 ```
 --
 
-Now after the **az keyvault** is created with **stored secret credentials**, its now time to build the parameter file to help **inject this very credentials** during the VM creation stage
+Now after the **az keyvault** is created with **stored secret credentials**, its now time to build the parameter file to help **inject this very credentials** during the VM creation stage.
 
-Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe this parameter section, where the **keyvault reference** is completed
+Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe this parameter section, where the **keyvault reference** is completed.
 
 ```
 /* parameter definition */
@@ -996,11 +996,11 @@ Lets navigate to the parameter file: _azuredeploy.parameters.json_, and observe 
 ...
 ```
 
-In this file, we explicitly **declare the resourceId** of the Keyvault resource, and point directly to the `secretName` (i.e. _vmAdminPassword_) as created in the prior step
+In this file, we explicitly **declare the resourceId** of the Keyvault resource, and point directly to the `secretName` (i.e. _vmAdminPassword_) as created in the prior step.
 
-Also you will notice that the **default login to this VM**: _azureadmin_
+Also you will notice that the **default login to this VM**: _azureadmin_.
 
-Now, lets run the command to **create the VM, in tact with the parameter files**
+Now, lets run the command to **create the VM, in tact with the parameter files**.
 
 **Command (for VM creation):**
 ```
@@ -1222,3 +1222,15 @@ DeploymentDebugLogLevel :
 After this VM creation is complete, you can **directly try to connect to this VM** (via RDP of course!), and then login to the VM with the username: _azureadmin_ & then enter the **same password** which you had typed for the `secretValue` during the keyvault creation. 
 
 **You would be able to login without any hitch, (in a very secure mode of course!)**
+
+### <a name="linked-template"></a>9. Usage of Linked templates
+|Property|Definition|
+|---|---|
+|Folder|[7-linked-templates](./7-linked-templates)|
+|StorageAccount File|_azuredeploy.storageaccount.json_|
+|File|_azuredeploy.json_|
+
+This concept of using **linked templates**, is especially helpful, when you **have templatized a az resource, and have uploaded its template in an external site** (ex: could be in a ftp server or within a blob (container)), and its right then, you **wish to deploy a new resource, by referencing the same template.**
+
+In this example, we have built a template for storage account, and have deployed it within its blob container
+
