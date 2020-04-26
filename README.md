@@ -1223,7 +1223,7 @@ After this VM creation is complete, you can **directly try to connect to this VM
 
 **You would be able to login without any hitch, (in a very secure mode of course!)**
 
-### <a name="linked-template"></a>9. Usage of Linked templates
+### <a name="linked-templates"></a>9. Usage of Linked templates
 |Property|Definition|
 |---|---|
 |Folder|[7-linked-templates](./7-linked-templates)|
