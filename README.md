@@ -734,7 +734,7 @@ More notes on this topic will be performed and documented soon!
 |---|---|
 |Folder|[5-use-conditions](./5-use-conditions)|
 |File|_azuredeploy.json_|
-|ParameterFile|_azuredeploy.parameters.dev.json_|
+|ParameterFile|_azuredeploy.parameters.json_|
 
 Sometimes, while creating multi-coupled resources, there comes a time when we can choose to create a resource **based on a certain criteria.** Criteria could range from
 
