@@ -1,5 +1,23 @@
 # az-arm-advance-templates
-A detailed run on few of the advance topics of ARM
+A detailed run on few of the **advance topics of ARM, within Azure Resource Manager templaets.** It includes
+
+1. how to create a **complex az resource** which has multi-dependency with other az resources?
+
+2. how to not build everything from scratch, and rely on **pre-existing templates**?
+
+3. how to **secure your az resources** (right from its creation till the deployment)?
+
+and **many more..!**
+
+:mega: **Key Assumption(s) at this point:**
+
+a. This course has been built, bearing in mind that **you are aware of the ARM terminologies** (ex: _parameter, resource, variable, functions, etc_). If you are not aware, then please feel free to indulge in the [basic refresher course](https://github.com/azure-experience/az-arm-basic-templates)
+
+b. It also assumes that you have basic capability on **Windows PowerShell**, and esp on the **subscription/environ related az cmdlets** (ex: _get-azsubscription, get-azcontext, set-azcontext, etc_)
+
+Hope this course gives you the much needed info you are looking for :smiley:
+
+---
 
 ## Index for different use-cases
 ### [1. Brief Introduction _(Before you start)_](#before-we-start)
