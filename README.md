@@ -1,5 +1,5 @@
 # az-arm-advance-templates
-A detailed run on few of the **advance topics of ARM, within Azure Resource Manager templates.** It includes
+A detailed run on few of the **advance topics of ARM, used with Azure Resource Manager templates & PowerShell.** It includes
 
 1. how to create a **complex az resource** which has multi-dependency with other az resources?
 
